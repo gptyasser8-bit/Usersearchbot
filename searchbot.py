@@ -11,7 +11,7 @@ api_id = int(os.environ["API_ID"])
 api_hash = os.environ["API_HASH"]
 bot_token = os.environ["BOT_TOKEN"]
 
-client = TelegramClient("session", api_id, api_hash)
+tg = TelegramClient("session", api_id, api_hash)
 
 async def search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
@@ -19,34 +19,30 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     query = context.args[0].replace("@", "")
-    await update.message.reply_text(f"🔍 جاري جمع المعلومات عن: {query} ...")
-    await client.start()
+    await update.message.reply_text(f"🔍 جاري جمع المعلومات عن: {query}")
+    await tg.start()
 
-    # جلب معلومات الحساب
+    # معلومات الحساب
     try:
-        user = await client(GetFullUserRequest(query))
+        user = await tg(GetFullUserRequest(query))
         u = user.users[0]
         text = (
-            "👤 معلومات الحساب:\n\n"
-            f"الاسم: {u.first_name or ''} {u.last_name or ''}\n"
-            f"اليوزر: @{u.username}\n"
-            f"ID: {u.id}\n"
-            f"بوت: {'نعم' if u.bot else 'لا'}\n"
-            f"محذوف: {'نعم' if u.deleted else 'لا'}\n\n"
+            f"👤 الاسم: {u.first_name or ''} {u.last_name or ''}\n"
+            f"🔗 اليوزر: @{u.username}\n"
+            f"🆔 ID: {u.id}\n"
+            f"🤖 بوت: {'نعم' if u.bot else 'لا'}\n\n"
         )
     except:
         text = "❌ لم أستطع جلب معلومات الحساب.\n\n"
 
     # البحث في القنوات والمجموعات العامة
-    result = await client(SearchRequest(
+    result = await tg(SearchRequest(
         peer='t.me',
         q=query,
         filter=InputMessagesFilterEmpty(),
-        min_date=None,
-        max_date=None,
+        limit=50,
         offset_id=0,
         add_offset=0,
-        limit=50,
         max_id=0,
         min_id=0,
         hash=0
@@ -57,25 +53,22 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             chat = await msg.get_chat()
             name = chat.title
-            if chat.username:
-                link = f"https://t.me/{chat.username}"
-            else:
-                link = "بدون رابط عام"
+            link = f"https://t.me/{chat.username}" if chat.username else "بدون رابط عام"
             places[name] = link
         except:
             pass
 
     if places:
-        text += "📍 القنوات والمجموعات العامة التي ظهر فيها:\n\n"
+        text += "📍 القنوات والمجموعات العامة:\n\n"
         for name, link in places.items():
-            text += f"{name}\n🔗 {link}\n\n"
+            text += f"{name}\n{link}\n\n"
     else:
-        text += "❌ لم يتم العثور على قنوات أو مجموعات عامة.\n"
+        text += "❌ لا توجد نتائج عامة."
 
     await update.message.reply_text(text)
 
 app = ApplicationBuilder().token(bot_token).build()
 app.add_handler(CommandHandler("search", search))
 
-print("Bot is running...")
+print("Bot running...")
 app.run_polling()
