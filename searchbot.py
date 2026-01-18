@@ -1,10 +1,11 @@
+import os
 from telethon import TelegramClient
 from telethon.tl.functions.messages import SearchRequest
 from telethon.tl.types import InputMessagesFilterEmpty
 from telethon.tl.functions.users import GetFullUserRequest
+
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-import os
 
 api_id = int(os.environ["API_ID"])
 api_hash = os.environ["API_HASH"]
